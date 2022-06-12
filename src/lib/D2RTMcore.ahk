@@ -29,8 +29,6 @@ class D2RTMcore {
                 archive:=handleDir "\Handle.zip"
                 UrlDownloadToFile, https://download.sysinternals.com/files/Handle.zip , % archive
                 this.zip.unpack(archive,handleDir)
-
-                MsgBox, waiting
                 FileDelete, % archive
         
             }
