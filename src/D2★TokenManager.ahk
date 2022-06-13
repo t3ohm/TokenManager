@@ -1,14 +1,6 @@
-﻿#include, <D2RTMcore>
-;D2RTMcore.Admin()  
-/*
-    I'm the Menu! you can set the default key here.
-    The default is already Winkey+Leftmouse by default.
-    You cab delete menu_key line on line 8.. 
-    Or uncomment it and change it. 
-    */
-;menu_key:="#LButton" 
-    /*
-    sets hotkey for menu and checks 
-    for any profiles already in credential manager
-    */
-D2RTM:= New D2RTMcore.D2RTM(menu_key)
+﻿#SingleInstance, force
+#include, <D2RTM>
+D2RTMcore.Admin()  ; uncomment me for Admin
+menu_key:="#LButton" ; I'm the Menu! comment me out or leave me blank to disable me.
+D2RTM:= New D2RTM(menu_key) ; sets menu hotkey & checks for profiles in credential manager.
+return
