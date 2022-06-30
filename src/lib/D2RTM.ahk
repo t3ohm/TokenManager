@@ -1,5 +1,11 @@
 #include, <D2RTMcore>
 class D2RTM extends D2RTMcore {
+    static defaulttitle:="Diablo II: Resurrected"
+    static NameFrame := "D2R:"
+    static winHeight := 1300
+    static winWidth := 768
+    static X:=(A_ScreenWidth/2)-(1300/2)
+    static Y:=(A_ScreenHeight/2)-(768/2)
     __New(menukey=""){
         D2RTMcore.New()
         D2RTMcore := New D2RTMcore
@@ -13,7 +19,7 @@ class D2RTM extends D2RTMcore {
     savetoken(SelectedProfile=""){
         if !SelectedProfile
             SelectedProfile:=this.profile.input()
-        return this.token.ToBin(SelectedProfile)
+        return this.Token.ToBin(SelectedProfile)
     }
     loadtoken(SelectedProfile){
         return this.Token.Load(this.Token.FromBin(SelectedProfile))
@@ -51,28 +57,51 @@ class D2RTM extends D2RTMcore {
                 if this.bnet.D2R.Select()
                     break
             }
-            ;didn't click play 1/3
             WinWait, % this.bnet.D2R.defaulttitle
             this.Hwnd.Move(this.Hwnd.Get(this.bnet.D2R.defaulttitle))
             this.UpdatedToken(this.bnet.D2R.defaulttitle,SelectedProfile)
+            ;this.CollectToken()
+            this.savetoken(SelectedProfile)
             this.bnet.D2R.kill()
             return 1
         
     }
-    UpdatedToken(title,SelectedProfile){
-        while (!this.bnet.D2R.online() and !this.bnet.D2R.Onlinegamecreation())
+    CollectToken(){ ;
+        tokens:={}
+        maxtokens=4
+        last4:=SubStr(token:=this.Get(), -4)
+        tokens.push(lastlast4:=last4)
+        loop,
         {   
-            if ((mod(cycle, 2) = 0)){
-                this.Hwnd.Spacer(this.Hwnd.Get(title))
+            if (last4 != lastlast4){
+                tokens.push(lastlast4:=last4)
+                
+            }
+            collected:=tokens.MaxIndex()
+            if (collected = maxtokens){
+                return 1
+            }
+            if ((mod(cycle, 3) = 0)){
+                this.window.Spacer(this.defaulttitle)
             }
             cycle++
+            last4:=SubStr(token:=this.Get(), -4)
+            
+        }
+    } 
+    UpdatedToken(title,SelectedProfile){
+        this.Hwnd.Move(title)
+        while (!this.bnet.D2R.online() and !this.bnet.D2R.Onlinegamecreation())
+        {   
+            this.isMove()
+            this.window.Spacer(title)
             sleep, 1000
         }
         cycle:=0
         return this.savetoken(SelectedProfile)
     }
     isToken(profilename){
-        if (FileExist(tokenfile:=this.Token.File(profilename))){
+        if (FileExist(this.Token.File(profilename))){
             return 1
         }
         
@@ -86,31 +115,46 @@ class D2RTM extends D2RTMcore {
             return 0
         }
     }
+    StartOffline(){
+        this.Token.Clear()
+        if PID:=this.bnet.D2R.Start()
+            WinWait, % this.defaulttitle
+        while (!this.Sentinal()){
+        }
+
+    }
     StartToken(SelectedProfile=""){
-        ;MsgBox, %SelectedProfile%
-        
         if !SelectedProfile
             SelectedProfile:=this.profile.input()
         if !SelectedProfile
             return 0
         this.loadtoken(SelectedProfile)
         if PID:=this.bnet.D2R.Start()
-            WinWait, Diablo II: Resurrected
-        sleep, 50
+            WinWait, % this.defaulttitle
+        this.Hwnd.Move(this.defaulttitle)
         starttitle:=this.bnet.D2R.title(SelectedProfile)
-        sleep, 50
-        this.Hwnd.Move(gamehwnd:=this.Hwnd.Get(starttitle))
         sleep, 3000
         result:=this.UpdatedToken(starttitle,SelectedProfile)
         while (!this.Sentinal()){
-            WinMinimize, % "ahk_id" gamehwnd
         }
+            WinMinimize, % starttitle
+            WinMinimize,
         return result
+    }
+    CSR(SelectedProfile=""){ ;Close handle,Save token, Rename window
+        this.Sentinal()
+        this.savetoken(SelectedProfile)
+        this.Rename(SelectedProfile)
+    }
+    Rename(SelectedProfile){
+        newtitle:=this.NameFrame SelectedProfile
+        if (D2RTMcore.Window.title(this.defaulttitle,newtitle)){
+            return newtitle
+        }
     }
     RefreshAll(){
         for profile,name in this.profile.Update()
             {
-                MsgBox,,, % name, % (1/3)
                 if (this.Refreshtoken(name)){
                     rcount++
                 }
@@ -120,9 +164,9 @@ class D2RTM extends D2RTMcore {
     StartAll(){
         for profile,name in this.profile.Update()
             {
-                MsgBox,,, % name, % (1/3)
                 this.Token.Clear()
                 if (this.StartToken(name)){
+                    this.window.min("D2R:" name,1)
                     scount++
                 }
             }
@@ -132,7 +176,6 @@ class D2RTM extends D2RTMcore {
         Menu, D2RTM, DeleteAll
     }
     Menu(){
-        menu, D2RTM, add
         Menu, settings, Add, Reload, restart
         menu, settings, Add, Exit, getout
         
@@ -149,7 +192,11 @@ class D2RTM extends D2RTMcore {
             {
                 menu_profile:=Allprofiles[A_Index]
                 if (this.isToken(menu_profile)){
+                    if (A_index = 1){
+                        Menu, Launchers, Add, All, StartAll
+                    }
                     menu, Launchers, add, % name, menu_launcher
+                    Menu, CSRs, Add, % name, CSR
                 } else {
                     disabledname:="No Token, Refresh " name
                     menu, Launchers, add, % disabledname, menu_launcher
@@ -162,10 +209,10 @@ class D2RTM extends D2RTMcore {
             ;menu, Refresh, add, Refresh, :Refreshers
             
             ;Menu, Start, Add, Token, starttoken
-            ;Menu, Start, Add, All, StartAll
             menu, D2RTM, add, Start, :Launchers
         }
         if (ProfileCount){
+            menu, Profile, add, CSR, :CSRs
             Menu, Profile, Add, Token, :Tokens
             Menu, Profile, Add, List, List
             menu, D2RTM, add, Refresh, :Refreshers
@@ -182,6 +229,13 @@ class D2RTM extends D2RTMcore {
         this.menuDestroy()
         this.Menu()
         Menu, D2RTM, Show
+    }
+    isMove(){
+        WinGetPos, X, Y, Width, Height, % D2RTM.defaulttitle
+        if (X != D2RTM.X){
+            D2RTM.window.Move(D2RTM.defaulttitle,D2RTM.X,D2RTM.Y)
+            return 1
+        }
     }
 
 } ;end of D2RTM
@@ -223,12 +277,10 @@ if false { ;class labels for menus
     menu_refresher:
          D2RTM.Refreshtoken(A_ThisMenuItem)
     return
-    detroy_menu:
-       
-    return
-    nothingtodo:
-    return
     getout:
         Exitapp
     return
+    CSR:
+        D2RTM.CSR(A_ThisMenuItem)
+    return 
 }

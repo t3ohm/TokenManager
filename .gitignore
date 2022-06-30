@@ -1,6 +1,5 @@
-
-src/config/
-
-
+*.bin
 src/scratch.ahk
 src/scratch.bat
+src/config/
+src/config - Copy/
